@@ -1,8 +1,10 @@
 import copy
+import datetime
 import hashlib
 import itertools
 import os
 
+from freezegun import freeze_time
 import pytest
 
 import keri.core.coring as coring
@@ -18,6 +20,8 @@ def init():
     os.makedirs("example_payloads/keripy_tests/v2/JSON", exist_ok=True)
     os.makedirs("example_payloads/keripy_tests/v2/MGPK", exist_ok=True)
 
+
+@freeze_time("2019-07-03")
 def monkey_patch_sizeify():
     old_sizeify = coring.sizeify # the function not the result of the call
     old_directory = os.getcwd()
@@ -37,6 +41,8 @@ def monkey_patch_sizeify():
                                       ('JSON', 'MGPK', 'CBOR')):
             cesr_message, _proto, _kind, _ked, _vrsn = old_sizeify(ked=ked, kind=kind, version=version)
             hashed_filename = hashlib.md5(cesr_message).hexdigest()
+            if cesr_message == "":
+                import pdb; pdb.set_trace()
             with open(old_directory + f"/example_payloads/keripy_tests/v{v.major}/{k}/{hashed_filename}", "wb") as fyle:
                 fyle.write(cesr_message)
 
