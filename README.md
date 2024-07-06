@@ -1,6 +1,11 @@
 # cesr-test-vectors
 CESR Test Vectors
 
+**Note: Neither the sizeify property based testing nor (for a lot of reasons)
+are the sizeified keripy vectors.  They are not idempotent between testing
+runs.  We tried to use libraries like freezegun and time_machine with our
+monkeypatching code but due to a variety of choices in the keripy test
+implementations these dates aren't always adhered to. **
 SIZEIFY
 	KERIPY
 		VERSION1

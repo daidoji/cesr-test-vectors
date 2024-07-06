@@ -1,14 +1,12 @@
 import copy
-import datetime
 import hashlib
 import itertools
 import os
 
-from freezegun import freeze_time
 import pytest
 
 import keri.core.coring as coring
-from keri.kering import Version, Versionage
+from keri.kering import Version, Versionage, versify, deversify
 
 
 def init():
@@ -20,8 +18,6 @@ def init():
     os.makedirs("example_payloads/keripy_tests/v2/JSON", exist_ok=True)
     os.makedirs("example_payloads/keripy_tests/v2/MGPK", exist_ok=True)
 
-
-@freeze_time("2019-07-03")
 def monkey_patch_sizeify():
     old_sizeify = coring.sizeify # the function not the result of the call
     old_directory = os.getcwd()
@@ -31,23 +27,29 @@ def monkey_patch_sizeify():
 
     # If this signature changes this will probably break in weird ways
     def new_sizeify(ked, kind=None, version=Version):
-        # old_ked = copy.deepcopy(ked)
+        old_ked = copy.deepcopy(ked)
         # old_kind = copy.deepcopy(kind)
         # old_version = copy.deepcopy(version)
 
         # _cesr_message, proto, kind, ked, vrsn = old_sizeify(ked=ked, kind=k, version=v)
         # print(proto, kind, vrsn)
+        
         for v, k in itertools.product((v1_tuple, v2_tuple), 
                                       ('JSON', 'MGPK', 'CBOR')):
-            cesr_message, _proto, _kind, _ked, _vrsn = old_sizeify(ked=ked, kind=kind, version=version)
-            hashed_filename = hashlib.md5(cesr_message).hexdigest()
-            if cesr_message == "":
+            try:
+                working_ked = copy.deepcopy(ked)
+                proto, _vrsn, _kind, _size = deversify(working_ked['v'])
+                working_ked['v'] = versify(proto, v, k, 0)
+                #print(working_ked['v'])
+            except Exception as e:
                 import pdb; pdb.set_trace()
+            cesr_message, _proto, _kind, _ked, _vrsn = old_sizeify(ked=working_ked, kind=k, version=v)
+            hashed_filename = hashlib.md5(cesr_message).hexdigest()
             with open(old_directory + f"/example_payloads/keripy_tests/v{v.major}/{k}/{hashed_filename}", "wb") as fyle:
                 fyle.write(cesr_message)
 
         # We run whatever was passed in originally
-        return old_sizeify(ked=ked, kind=kind, version=version)
+        return old_sizeify(ked=old_ked, kind=kind, version=version)
 
     # Monkeypatch
     coring.sizeify = new_sizeify
